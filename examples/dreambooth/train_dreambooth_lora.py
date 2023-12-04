@@ -1259,7 +1259,7 @@ def main(args):
                     loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
 
                 accelerator.backward(loss)
-                logger.info(f"[Rank {accelerator.device}] loss:{loss.item()} [Global step: {global_step}]")
+                print(f"[Rank {accelerator.device}] loss:{loss.item()} [Global step: {global_step}]")
                 if accelerator.sync_gradients:
                     params_to_clip = (
                         itertools.chain(unet_lora_parameters, text_lora_parameters)

@@ -29,6 +29,7 @@ import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
 import transformers
+import time
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import ProjectConfiguration, set_seed
@@ -1173,6 +1174,8 @@ def main(args):
         disable=not accelerator.is_local_main_process,
     )
 
+    print(type(unet), type(text_encoder))
+
     for epoch in range(first_epoch, args.num_train_epochs):
         unet.train()
         if args.train_text_encoder:
@@ -1256,6 +1259,7 @@ def main(args):
                     loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
 
                 accelerator.backward(loss)
+                logger.info(f"[Rank {accelerator.device}] loss:{loss.item()} [Global step: {global_step}]")
                 if accelerator.sync_gradients:
                     params_to_clip = (
                         itertools.chain(unet_lora_parameters, text_lora_parameters)
@@ -1266,6 +1270,9 @@ def main(args):
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
+
+                if not accelerator.is_main_process:
+                    time.sleep(10)
 
             # Checks if the accelerator has performed an optimization step behind the scenes
             if accelerator.sync_gradients:
